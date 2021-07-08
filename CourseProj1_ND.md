@@ -92,11 +92,11 @@ list.files()
 
 ```
 ##  [1] "activity.csv"               "activity.zip"              
-##  [3] "CourseProj1_ND.html"        "CourseProj1_ND.md"         
-##  [5] "CourseProj1_ND.Rmd"         "CourseProj1_ND_files"      
-##  [7] "doc"                        "instructions_fig"          
-##  [9] "PA1_template.Rmd"           "Project1_Step_Monitoring.R"
-## [11] "README.md"
+##  [3] "CourseProj1_N2.Rmd"         "CourseProj1_ND.html"       
+##  [5] "CourseProj1_ND.md"          "CourseProj1_ND.Rmd"        
+##  [7] "CourseProj1_ND_files"       "doc"                       
+##  [9] "instructions_fig"           "PA1_template.Rmd"          
+## [11] "Project1_Step_Monitoring.R" "README.md"
 ```
 
 ```r
@@ -112,49 +112,43 @@ data <- tbl_df(read.csv('activity.csv'))
 
 
 ```r
-# total steps
-tot_steps <- sum(data$steps,na.rm = TRUE)
-tot_steps
-```
+# total steps per day
+data_by_day <- data %>%  group_by(date)
+tot_daily_steps <- summarise(data_by_day,sum(steps))
 
-```
-## [1] 570608
-```
 
-```r
 # histogram
-ggplot(na.omit(data), aes(x=steps)) + geom_histogram()
-```
-
-```
-## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+ggplot(na.omit(tot_daily_steps), aes(x=`sum(steps)`)) + 
+  geom_histogram(boundary = 0,
+                 binwidth = 2500,
+                 col='black',
+                 fill='blue',
+                 alpha=.25) +
+  ggtitle('Histogram of steps per day') +
+  xlab('Total Steps') +
+  ylab('Frequency') +
+  theme(plot.title = element_text(hjust=0.5)) +
+  scale_x_continuous(breaks = seq(0,25000,2500)) +
+  scale_y_continuous(breaks = seq(0,25,5))
 ```
 
 ![](CourseProj1_ND_files/figure-html/unnamed-chunk-3-1.png)<!-- -->
 
 ```r
-sum(data$steps==0, na.rm = TRUE)   # matches histogram
-```
-
-```
-## [1] 11014
-```
-
-```r
 # mean and median
-mean(data$steps, na.rm = TRUE)
+mean(tot_daily_steps$`sum(steps)`, na.rm = TRUE)
 ```
 
 ```
-## [1] 37.3826
+## [1] 10766.19
 ```
 
 ```r
-median(data$steps, na.rm = TRUE)
+median(tot_daily_steps$`sum(steps)`, na.rm = TRUE)
 ```
 
 ```
-## [1] 0
+## [1] 10765
 ```
 
 ## What is the average daily activity pattern?
@@ -202,14 +196,8 @@ tot_na
 ```
 
 ```r
-# replace NA values with avg for that specific interval 
-# data_rep <- data %>% mutate(steps=replace_na(steps,"bazingo"))
-
-
-data2 <- data
-
 # add index column
-data2 <- data2 %>% mutate(int_avg_index=match(data$interval, avg_steps$interval)) 
+data2 <- data %>% mutate(int_avg_index=match(data$interval, avg_steps$interval)) 
 
 # use index to lookup calculated averages for each interval. Put into new column
 data2$int_mean <- avg_steps$`mean(steps)`[data2$int_avg_index]
@@ -224,47 +212,45 @@ data2$steps[which(is.na(data2$steps))] <- data2$int_mean
 ```
 
 ```r
-# plot again: histogram
-ggplot(data2, aes(x=steps)) + geom_histogram()
-```
+# total steps per day
+data_by_day2 <- data2 %>%  group_by(date)
+tot_daily_steps2 <- summarise(data_by_day2,sum(steps))
 
-```
-## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+# plot again: histogram
+# ggplot(data2, aes(x=steps)) + geom_histogram()
+
+ggplot(na.omit(tot_daily_steps2), aes(x=`sum(steps)`)) + 
+  geom_histogram(boundary = 0,
+                 binwidth = 2500,
+                 col='black',
+                 fill='red',
+                 alpha=.25) +
+  ggtitle('Histogram of steps per day (Imputed NAs)') +
+  xlab('Total Steps') +
+  ylab('Frequency') +
+  theme(plot.title = element_text(hjust=0.5)) +
+  scale_x_continuous(breaks = seq(0,25000,2500)) +
+  scale_y_continuous(breaks = seq(0,25,5))
 ```
 
 ![](CourseProj1_ND_files/figure-html/unnamed-chunk-4-1.png)<!-- -->
 
 ```r
-# mean and median: NO DIFFERENCE BETWEEN IMPUTED MISSING DATA VS. ORIGINAL DATA
-mean(data2$steps)
+# mean and median: 
+mean(tot_daily_steps2$`sum(steps)`)
 ```
 
 ```
-## [1] 37.3826
-```
-
-```r
-median(data2$steps)
-```
-
-```
-## [1] 0
+## [1] 10766.19
 ```
 
 ```r
-mean(data$steps,na.rm = TRUE)
+median(tot_daily_steps2$`sum(steps)`)
 ```
 
 ```
-## [1] 37.3826
-```
-
-```r
-median(data$steps)
-```
-
-```
-## [1] NA
+## [1] 10766.19
 ```
 
 ## Are there differences in activity patterns between weekdays and weekends?
